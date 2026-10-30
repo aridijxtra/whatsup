@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tekstwolk — verzin je eigen strip</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%AC%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBF7EC;
+    --ink:#1A1A1A;
+    --red:#E63946;
+    --yellow:#FFD23F;
+    --blue:#1D3557;
+    --teal:#2A9D8F;
+    --panel:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle, rgba(26,26,26,0.06) 1.4px, transparent 1.4px);
+    background-size:20px 20px;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:28px 16px 60px;
+  }
+  .wrap{width:100%;max-width:640px;}
+
+  header{text-align:center;margin-bottom:22px;}
+  header h1{
+    font-family:'Permanent Marker',cursive;
+    font-size:clamp(2.1rem,7vw,2.8rem);
+    color:var(--ink);
+    margin:0 0 6px;
+    letter-spacing:0.5px;
+    transform:rotate(-1.2deg);
+  }
+  header h1 span{color:var(--red);}
+  header p{margin:0;font-size:0.98rem;color:#444;max-width:480px;margin:0 auto;}
+
+  .panel{
+    background:var(--panel);
+    border:3px solid var(--ink);
+    border-radius:16px;
+    box-shadow:6px 6px 0 var(--ink);
+    padding:18px;
+    margin-bottom:22px;
+  }
+
+  .scene-title{
+    font-family:'Permanent Marker',cursive;
+    font-size:1.15rem;
+    margin:0 0 12px;
+    color:var(--blue);
+  }
+
+  .scene-frame{
+    border:3px solid var(--ink);
+    border-radius:12px;
+    overflow:hidden;
+    background:#eee;
+    line-height:0;
+  }
+  .scene-frame svg{width:100%;height:auto;display:block;}
+
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px;}
+  .chip{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:0.85rem;
+    padding:7px 14px;
+    border-radius:999px;
+    border:2px solid var(--ink);
+    background:var(--paper);
+    cursor:pointer;
+    transition:transform .12s ease;
+  }
+  .chip:hover{transform:translateY(-2px);}
+  .chip.active{background:var(--yellow);}
+
+  label.field-label{
+    display:block;
+    font-weight:700;
+    font-size:0.82rem;
+    text-transform:none;
+    margin:14px 0 6px;
+    color:var(--blue);
+  }
+
+  textarea{
+    width:100%;
+    resize:none;
+    font-family:'Inter',sans-serif;
+    font-size:0.95rem;
+    padding:10px 12px;
+    border:2px solid var(--ink);
+    border-radius:10px;
+    min-height:56px;
+    background:#fffdf7;
+  }
+  textarea:focus{outline:3px solid var(--teal);outline-offset:1px;}
+
+  button{
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:0.92rem;
+    padding:11px 18px;
+    border:2.5px solid var(--ink);
+    border-radius:10px;
+    background:var(--paper);
+    cursor:pointer;
+    box-shadow:3px 3px 0 var(--ink);
+    transition:transform .1s ease, box-shadow .1s ease;
+  }
+  button:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink);}
+  button:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink);}
+  button:focus-visible{outline:3px solid var(--teal);outline-offset:2px;}
+
+  button.primary{background:var(--red);color:#fff;}
+  button.secondary{background:var(--yellow);}
+  button.ghost{background:var(--panel);}
+  button.wide{flex:1 1 auto;}
+
+  .actions{margin-top:18px;}
+  .actions .row{margin-top:8px;}
+
+  .hint{font-size:0.8rem;color:#555;margin-top:8px;}
+
+  footer{text-align:center;font-size:0.78rem;color:#666;margin-top:8px;}
+  footer a{color:var(--blue);}
+
+  @media (max-width:420px){
+    .panel{padding:14px;}
+    button{font-size:0.86rem;padding:10px 14px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Tekst<span>wolk</span></h1>
+    <p>Kies een plaatje, pak een absurde uitspraak — of typ er zelf een — en voeg een reactie toe.</p>
+  </header>
+
+  <div class="panel">
+    <p class="scene-title" id="scene-title"></p>
+    <div class="scene-frame" id="scene-frame"></div>
+
+    <div class="row">
+      <button class="ghost wide" id="btn-new-scene">🔀 Ander plaatje</button>
+      <button class="secondary wide" id="btn-random-text">✨ Verzin tekst</button>
+    </div>
+
+    <label class="field-label" for="theme-chips">Categorie voor de uitspraak</label>
+    <div class="chips" id="theme-chips"></div>
+
+    <div id="bubble-fields"></div>
+
+    <div class="actions">
+      <div class="row">
+        <button class="primary wide" id="btn-download">⬇️ Download afbeelding</button>
+        <button class="ghost wide" id="btn-share">📤 Verstuur</button>
+      </div>
+      <p class="hint">De tekstwolken staan altijd op dezelfde plek, dus je tekst past vanzelf — hoe langer de zin, hoe kleiner de letters. De reactie rechts is altijd willekeurig, los van de categorie.</p>
+    </div>
+  </div>
+
+  <footer>
+    Alle plaatjes zijn eigen tekeningen, geen echte foto's — dus je kunt ze zonder zorgen delen.
+  </footer>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+const SVGNS = "http://www.w3.org/2000/svg";
+const BUBBLE_FONT = `"Comic Sans MS","Comic Neue",cursive`;
+
+/* ---------------------------------------------------------
+   TEKSTEN — categorieën voor de eerste wolk, reacties voor de tweede
+--------------------------------------------------------- */
+const CATEGORY_TEXTS = {
+  initieel: [
+    "In de mist lijkt mijn huis een wolkenkrabber",
+    "De ontwikkeling van de volledig elektrische lamp",
+    "Na de wortelbehandeling kan de wortel in de rauwkost",
+    "Een landmijn bemoeit zich nergens mee, tot ik er op stamp",
+    "Tegenwoordig is boek drukken geen kunst",
+    "Patent op een stekker die meestal niet past",
+    "Het paard komt met vertrouwen",
+    "Ook mannen en vrouwen terug in de kast",
+    "De eekhoorn bidt tot de vader, ook een eekhoorn",
+    "De mooiste bloemen kijken je aan",
+    "Dieren zijn binnenaardse wezens",
+    "Ik denk dus wij bestaan",
+    "Elke seconde telt maar kan zich vergissen",
+    "Gebruik tenminste een emmer als je water naar de zee draagt",
+    "Ik kan voorspellen wat ik zo meteen ga zeggen",
+    "Wie met gekruiste benen zit is nog maagd",
+    "Verleiden tot uitlokking is niet verboden",
+    "Een driewieler heeft geen zijwieltjes",
+    "Elektrificatie gaat schoksgewijs",
+    "Onvolwassen kinderen maken kleine dealtjes",
+    "De gevoelige snaartheorie raakt me diep",
+    "Neem een spatie, om uit te rusten",
+    "De voorhuid is nooit langer dan de penis",
+    "Stranden bezoeken alleen de kusten",
+    "Is het wel de nek die draait tijdens het omkijken?",
+    "Manifestaties van fenomenen zijn soms vaag",
+    "Bij schaken is alleen de toren geen mens",
+    "Een bom ontploft gestaag",
+    "Hoogopgeleiden zijn ook mensen",
+    "Afbladderen, rotten en verbleken komen na de glorie",
+    "Een booreiland voor iedereen is onbereikbaar",
+    "Het is verdorie een slappe vloek",
+    "Kunstmatige intelligentie doet mensen kunstmatig intelligent lijken",
+    "Er zijn goede redenen om de netto slechtste optie te kiezen",
+    "Bij een tekort aan kennis lijken veel dingen chaotisch",
+    "Met een bril kun je alleen smiezen",
+    "Buiten bewustzijn waait een heel andere wind",
+    "Het is een lieve meid en we noemen haar insuline",
+    "De cashewnotenbalk voelt vettig aan",
+    "Een bouwpakket voor een ruïne",
+    "Pas als de zeespiegel stijgt herken ik mezelf",
+    "Tulpenbollen smaken niet eens naar oliebollen",
+    "Gaat het bij een lijdensweg ook om de reis?",
+    "Het kan fatsoenlijk zijn om met je te laten sollen",
+    "Alleen ronde wielen kunnen rollen",
+    "Dat de aarde draait wil ik nog wel geloven",
+    "Monitoren zonder doel geeft nergens zicht op",
+    "Populisme is niet altijd populair geweest",
+    "Een dikke economie met een BMI van 35 is ongezond",
+    "Probeer maar eens te vliegen met 1 vleugel",
+    "Een influencer zonder publiek",
+    "Geef me een evolutionaire niche en ik geef je een nieuw dier",
+    "Vroeger was alles beterschap gewenst",
+    "Kantelen helpen niet tegen drones",
+    "Als de maag zich ledigt, stromen de darmen vol",
+    "Zolang je je hartslag telt leef je nog",
+    "Mijn middle-name is krachtenveld",
+    "Een snob is pas een snob als hij het weet",
+    "Een grote stap van mij is een kleine stap voor de mensheid",
+    "Het leven is een trampoline",
+    "Broeders met lange schouders dragen vulsel",
+    "Hormonen bestaan ook uit protonen",
+    "De oceaanbodem is nog onontdekt, door mensen",
+    "Zoveel miljard mensen die allemaal een kacheltje zijn",
+    "Tijdseenheden bestaan niet echt",
+    "De meeste machines hebben maar 1 doel",
+    "De massa is hysterisch, waarheid is een constructie",
+    "Het platteland houdt stand",
+    "Windkracht laat zich kanaliseren",
+    "Een tafelkleed als doofpot",
+    "Vliegen als een vogel, maar een vleugel is lastig te vervoeren",
+    "De vrije wil is als de rubberen hand, je denkt dat die jou toebehoort",
+    "Foetsie is een geluid",
+    "Als zwart eigenlijk blauw is, wat is wit dan?",
+    "Eén iteratie is geen iteratie",
+    "Liever geen slurf, alleen als het mammoet",
+    "Sorbra's hebben strepen en leven in Afrika",
+    "Als iets op een t lijkt dan is het t-achtig",
+    "Schokdempers veren mee met de schok",
+    "De zwaartekracht staat altijd aan",
+    "Wat is er romantisch aan bewegende luchtmoleculen tegen je gezicht",
+    "In een democratie mag je denken wat je zegt",
+    "Communisten houden elkaar heel goed vast"
+  ],
+  methode: [
+    "Outliers horen er ook bij",
+    "Causaliteit is nog geen correlatie",
+    "Een anova in je tas",
+    "Fraude Diederik stapelt zich op",
+    "Kiezen, maar wel terugleggen",
+    "Cronbach's alpha-mannetjes",
+    "De BMI van een effect size is groot",
+    "Een dansende p-waarde",
+    "Regressie brengt iets terug",
+    "Echte lineariteit is zeldzaam",
+    "Vrijheidsgraden zijn niet gratis",
+    "Heeft een error ook een error?",
+    "Retrospectief is ook longitudinaal",
+    "Manipulaties kunnen tot iets goeds leiden",
+    "Experimenten trotseren praatjes",
+    "Nul-bevindingen zijn van geen waarde",
+    "Ik voel me nu een standaarddeviatie beter",
+    "Stabiele toestanden correleren niet",
+    "Statistische power geeft scherp zicht",
+    "Fout-positief is gemeen",
+    "Fout-negatief is ernstig",
+    "Chi-square correleert met een tabel",
+    "Data nestelen zich als vanzelf",
+    "Logistische regressie is bot",
+    "SEM's kloppen altijd wel",
+    "Een gemiddelde is slechts een gemiddelde",
+    "Zonder variatie geen discriminatie",
+    "Wat is jouw betrouwbaarheidsinterval?",
+    "Veel mensen zijn multicollineair",
+    "Niemand is precies normaal verdeeld",
+    "Het verleden kan voorspeld worden",
+    "Afhankelijke variabelen hebben geen ego",
+    "Onafhankelijke variabelen overschatten zichzelf",
+    "Confounders doen het stiekem",
+    "Een mediator staat nooit alleen",
+    "Standaardiseren is zielig",
+    "Logrelaties hebben ingewikkelde gesprekken",
+    "Een banaan is curvilineair",
+    "Hercodering is een schepping",
+    "Een hertest is een blijk van wantrouwen",
+    "Een model kan zich fit voelen",
+    "Afkappunten doen pijn",
+    "Een statistische correctie is een illusie",
+    "Een echt verschil is altijd significant",
+    "U heeft een histogram-allergie",
+    "Van grote proporties word je dik",
+    "De politieagent geeft een gelijkteken",
+    "Mijn moeder kon bootstrappen",
+    "Een factorieel design is rommelig",
+    "Ik hou van enorme ratio's",
+    "Residuen mogen er ook zijn",
+    "Herhaalde metingen zijn uitputtend",
+    "Mijn eigenwaarde is tenminste 1",
+    "Assumpties zijn onbegrijpelijk",
+    "Als het lastig wordt vragen we Kruskal-Wallis",
+    "Nonparametrisch is jammer",
+    "Een waarschijnlijke kans is mogelijk",
+    "Forced entry kan tegenwoordig niet meer",
+    "Dummy coding is een slimme manier",
+    "Een standaardfout is wel erg saai",
+    "Verklaarde variantie is geen test",
+    "Orthogonale factoren zijn zichzelf",
+    "Mijn bureau is scheef verdeeld",
+    "Kijk daar gaat een uitschieter!",
+    "Latente factoren zijn onzichtbaar",
+    "Ik zit al jaren in een kwartiel",
+    "Bonferroni wilde het niet mooier maken",
+    "Een goede drieweg-interactie is verzadigd",
+    "Varimax-rotatie maakt me misselijk"
+  ],
+  medische: [
+    "Uw frontaalbil is verstuikt",
+    "De linker maag is ontstoken",
+    "Een aorta heeft geen staart",
+    "Je kapsel zit goed, om je knie",
+    "Ze heeft zeer lange pezen",
+    "Smegma smaakt bitter",
+    "Mijn hypochondrieën zijn mat",
+    "ATP is licht ontvlambaar",
+    "Varen door calciumkanaaltjes",
+    "Je hebt slanke mitochondriën",
+    "Uw celwand is fluïde",
+    "Wie organiseert uw moleculen eigenlijk?",
+    "DNA is een traploper",
+    "Alleen kinderen zijn erfelijk",
+    "Je kijkt als je maaginhoud",
+    "De kamer is drie ileum lang",
+    "De bijkeuken is het rectum van mijn huis",
+    "Alleen haar endeldarm is van adel",
+    "Okergele ikterus is niet lelijk",
+    "Een natte diathese is uit de tijd",
+    "Oja, ik heb een aorta!",
+    "Een fitis is een ontstoken vogel",
+    "Veroudering is geen doel op zich",
+    "De straat is geplaveid met tandsteen",
+    "Voor logees heb ik een stressor",
+    "Blaasklachten komen door paardenbloemen",
+    "Een enorme prostaat staat stoer",
+    "Spermacellen zijn nog niet zichzelf",
+    "Hormonen dragen zwarte hoeden",
+    "Bloedgroepen polariseren gemakkelijk",
+    "Die prolaps staat je goed",
+    "Tussen de kolieken is het rustig",
+    "Waar pijn is, is vuur",
+    "Er zit rek in mijn longen",
+    "De ogen zelf zijn blind",
+    "De stuurman riep: De vliezen breken!",
+    "Labia minora vereisen weinig lipstick",
+    "Het is thoracaal wervel 3409",
+    "Te weinig zuurstof is nog geen benauwdheid",
+    "Ik heb lol met mijn cholesterol",
+    "Kinderen hebben niertjes",
+    "De slager eet spierweefsel",
+    "DNA kan ook erfelijk zijn",
+    "Schelden verdikt het huidweefsel",
+    "Salmonella zingt chansons",
+    "De mond omvat een sluitspier",
+    "Het aroma van een stoma",
+    "Huidskleuren zijn saai",
+    "Diarree in je dagboek",
+    "Zwellingen lijken op elkaar",
+    "De vruchten van een vleesboom",
+    "Een kinderboek met bloedplaatjes",
+    "Zijn er geen zwarte bloedcellen?",
+    "Mensen bestaan voor 69% uit komkommer",
+    "Zelf is de schijf van vijf taai",
+    "Zonder zwaartekracht geen onderkin",
+    "Covid-19 was een influencer",
+    "Er staat een eierstok achter de deur",
+    "Andermans speeksel in je mond is toegestaan",
+    "Klieren plagen niet expres",
+    "De Kruis Band treedt vanavond op",
+    "Breng je stembanden op spanning",
+    "De hele dag binnen adem is niet gezond",
+    "Ze heeft tachycardische charme",
+    "Laaggradige ontsteking is een smiecht",
+    "Gezondheid heeft maar 1 oorzaak",
+    "Sommige darmen hebben twaalf vingers",
+    "Film kijken doe je in de laparoscoop",
+    "Extreem eczeem is gemeen",
+    "Ik vergeet steeds dat ik lymfevaten heb",
+    "Oksels hebben bijwerkingen",
+    "Het zijn de liezen die tot opwinding leiden",
+    "De geur van endeldarm",
+    "Hoeveel blazen heeft een mens eigenlijk?",
+    "Het gehemelte bestaat al voor de dood",
+    "Er zit een echo in uw knieholte",
+    "Snot maak je zelf, zelfsnot",
+    "Het recyclen van pus lukt nog niet",
+    "Als iets op een zenuw lijkt, dan is het zenuwachtig",
+    "De vingers zijn distaal maar vaak heel dichtbij",
+    "Voetschurft aan je hielen prikt gemeen",
+    "Ook je nagel heeft een riem",
+    "Tien vingers of twee duimen",
+    "Kots eens in slow motion",
+    "Slijmvliezen zijn buitenaards",
+    "In je oor zit ook een orgaan",
+    "Zintuigen zijn er tegenwoordig voor ogen en voor oren",
+    "Alleen een drummer krijgt pijn aan zijn bekken",
+    "Het kapsel van mijn knie is modieus",
+    "Papillen smaken goed",
+    "Cyanose is normaal bij koninklijke bloede",
+    "Dode schepen hebben geen bezinking",
+    "Hier, een tas van de supermarktketen Adiposi",
+    "Schouderbladen konden vliegen",
+    "De thymus is een sociaal-medische constructie",
+    "Peter Pancreas dealt in insuline",
+    "Bacteriën hebben een opgeblazen gevoel",
+    "De mens groeit rond zijn darmstelsel",
+    "Spontaan herstel is een placebo-effect",
+    "De gebruiksaanwijzing van je lever is in het Latijn",
+    "De baan van planeten is meestal epileptisch",
+    "Een welvend perineum komt met een kind",
+    "Een ruimtecapsule is te groot om te slikken",
+    "Na de groei is de rek eruit",
+    "Mensen hebben verschillende soorten vliezen",
+    "Langzaam opende ze haar poriën"
+  ],
+  anderszins: [
+    "Vegetarische appels zijn klein",
+    "Met een airco geen zonnetje meer in huis",
+    "Langs de weg ligt een dode handschoen",
+    "Na de dood is er niks, wel tijdens de dood",
+    "Veel champignonteelt is gezwam",
+    "De speakers in je kamer spreken luid",
+    "Een robot is ook maar een mens",
+    "Spreek eens een andere paardensprong af",
+    "Hoe het ook begint, alles eindigt hetzelfde",
+    "Een trui met lang haar was je met shampoo",
+    "Vraag je werkgever om een oogopslag",
+    "Weet je nog welke groente we bij Tom aten?",
+    "De zwaartekracht zorgt voor veel ellende",
+    "Met pensioen. Of zonder",
+    "Ik ben een Berlijner bol, nou ja, was",
+    "Wat een gedoe, ik ben alweer bewusteloos"
+  ],
+  psychologie: [
+    "Ik klets dus ik besta",
+    "Van wie hou je, als je ziet dat je kind op jou lijkt",
+    "Geld maakt gelukkig niet",
+    "Een wonder is een wonder",
+    "In de ijstijd liepen de mammoeten op de grote markt",
+    "Een bloeiende neurose voelt zinvol",
+    "Psychotherapie werkt niet, maar voelt goed",
+    "Hoezo heb ik een branie-achtige houding?",
+    "Maar ze heeft wel een lief karakter",
+    "Naar buiten luisteren geeft altijd nieuwe informatie"
+  ]
+};
+
+const REACTIONS = [
+  "Kom nou zeg","Leg uit, vandaal","Hahaha!??","Enig bewijs?","Dat zei mijn moeder",
+  "Rot voor je","Okay, hmm, pfoe","Prachtig gezegd!","Je bent briljant","Lulkoek",
+  "Snap ik niet","Maar welke kleur?","Alleen op vrijdagen","Verdorie zeg","Nou moe",
+  "Dat wil ik ook","En anders bekeken?","Klinkt frauduleus","Nogal kunstmatig","Op je neus",
+  "Je meent het?","Woorden, woorden","Onbegrijpelijk","Je bedoelt nu?","Ben je ontstoken?",
+  "Waar is je hersen?","Manke gedachte","Pus uit de ziel","Weer wat nieuws","Wees maar blij",
+  "En dan bukken zeker?","Het is je verlatingsangst","Ik ben je vader niet","Heb je hersenwolk?","En dan in kleur",
+  "Hoeveel pixels precies?","Asjemenou","Geen vliegdekschip dus","En toen?","Heel flauw hoor",
+  "Is dat poëzie?","Klinkende keelklanken","Nieuwe wijn","Nu stijgen we op","Ongekend niveau",
+  "Dat is wel waar ja","Grappig hoor","Pas op hoor!","Nu verveel ik me","Ja, en nee",
+  "Net als in de film","Nu even niet","Niet weer een grap","Ik word gek","Leuke kleine pony",
+  "Locatie, locatie, locatie","Ik zie het voor me","Is dat wel toegestaan?","Beter zo dan hier","Ach man, alweer?",
+  "Ik ben niet dik","Vooral bij zon","Is dat normaal?","Je fantaseert weer","Zo bot hoeft niet",
+  "Allemaal spraaktaal","Zei de Paus dat?","Ik zeg niks","Alleen in Europa","Je stem is hoog",
+  "Wel goed uitspreken","Ongeveer twee meter","Inderdaad als toetje","Ik proef wat je zegt","Wat een twist",
+  "En de gordijnen?","Vraag dat straks nog eens","Ohoh, spannend","Wat kan ik ermee?","In vele kleuren",
+  "Nu ben ik warm","Dankjewel?","Dat steunt me","Waarom?","Wat is de reden?",
+  "Nu even serieus","Weet ik veel","Dat kan niet","Morgen weer proberen","Halleluja",
+  "Amen","Met dank aan jou","En nu slapen","Genoeg is genoeg","Ongelooflijk!",
+  "Hoe kan dat nou?","Waanzinnig","Pas maar op","Rennen mensen!","Of met bladluis"
+];
+
+const THEMES = [
+  {id:"mix", label:"Willekeurig"},
+  {id:"initieel", label:"Initieel"},
+  {id:"methode", label:"Methode en statistiek"},
+  {id:"medische", label:"Medische"},
+  {id:"anderszins", label:"Anderszins"},
+  {id:"psychologie", label:"Psychopathologie"}
+];
+
+/* ---------------------------------------------------------
+   TEKENPOP — 1 herbruikbaar personage, elke keer anders ingekleurd
+--------------------------------------------------------- */
+function person(o){
+  const cx=o.cx, cy=o.cy, shirt=o.shirt, skin=o.skin||"#f2c9a0",
+        pose=o.pose||"stand", scale=o.scale||1, mirror=o.mirror?-1:1,
+        hair=o.hair||"#3a2a1a";
+  if(pose==="lie"){
+    return `<g transform="translate(${cx},${cy}) scale(${mirror*scale},${scale})">
+      <ellipse cx="75" cy="14" rx="95" ry="30" fill="${shirt}" stroke="#1a1a1a" stroke-width="5"/>
+      <circle cx="0" cy="0" r="32" fill="${skin}" stroke="#1a1a1a" stroke-width="5"/>
+      <path d="M-28,-14 Q0,-40 28,-14" fill="${hair}" stroke="#1a1a1a" stroke-width="4"/>
+      <circle cx="-8" cy="-2" r="3.2" fill="#1a1a1a"/><circle cx="8" cy="-2" r="3.2" fill="#1a1a1a"/>
+      <path d="M-7,9 Q0,13 7,9" stroke="#1a1a1a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </g>`;
+  }
+  if(pose==="sit"){
+    return `<g transform="translate(${cx},${cy}) scale(${mirror*scale},${scale})">
+      <path d="M-38,50 Q0,32 38,50 L44,150 Q0,164 -44,150 Z" fill="${shirt}" stroke="#1a1a1a" stroke-width="5"/>
+      <circle cx="0" cy="0" r="32" fill="${skin}" stroke="#1a1a1a" stroke-width="5"/>
+      <path d="M-29,-17 Q0,-42 29,-17" fill="${hair}" stroke="#1a1a1a" stroke-width="4"/>
+      <circle cx="-10" cy="-2" r="3.2" fill="#1a1a1a"/><circle cx="10" cy="-2" r="3.2" fill="#1a1a1a"/>
+      <path d="M-8,10 Q0,15 8,10" stroke="#1a1a1a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </g>`;
+  }
+  return `<g transform="translate(${cx},${cy}) scale(${mirror*scale},${scale})">
+    <ellipse cx="0" cy="216" rx="50" ry="12" fill="rgba(0,0,0,.15)"/>
+    <path d="M-16,150 L-22,214 M16,150 L22,214" stroke="#1a1a1a" stroke-width="10" stroke-linecap="round"/>
+    <path d="M-40,55 Q0,38 40,55 L46,155 Q0,170 -46,155 Z" fill="${shirt}" stroke="#1a1a1a" stroke-width="5"/>
+    <circle cx="0" cy="0" r="32" fill="${skin}" stroke="#1a1a1a" stroke-width="5"/>
+    <path d="M-29,-17 Q0,-42 29,-17" fill="${hair}" stroke="#1a1a1a" stroke-width="4"/>
+    <circle cx="-10" cy="-2" r="3.2" fill="#1a1a1a"/><circle cx="10" cy="-2" r="3.2" fill="#1a1a1a"/>
+    <path d="M-8,10 Q0,15 8,10" stroke="#1a1a1a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  </g>`;
+}
+
+/* ---------------------------------------------------------
+   VASTE POSITIES — de tekstwolken staan altijd op dezelfde plek
+--------------------------------------------------------- */
+const DUO_BUBBLE_A = {x:16,y:14,w:372,h:184,tailFrac:0.57, tail:{x:230,y:322}};
+const DUO_BUBBLE_B = {x:412,y:108,w:372,h:184,tailFrac:0.43, tail:{x:570,y:322}};
+
+/* ---------------------------------------------------------
+   SCENES — ambigue tekeningen, telkens twee personen
+--------------------------------------------------------- */
+const SCENES = [
+  { id:"bankje", title:"Op het bankje", bg:()=>`
+    <rect width="800" height="600" fill="#cdeeff"/>
+    <rect y="440" width="800" height="160" fill="#8fce8f"/>
+    <ellipse cx="140" cy="380" rx="60" ry="120" fill="#5c9c5c"/>
+    <ellipse cx="680" cy="390" rx="70" ry="130" fill="#4e8a4e"/>
+    <path d="M120,480 Q400,440 680,480" stroke="#c7b28a" stroke-width="18" fill="none"/>
+    <rect x="150" y="470" width="500" height="18" rx="4" fill="#a9744f" stroke="#1a1a1a" stroke-width="4"/>
+    <rect x="150" y="500" width="500" height="14" rx="4" fill="#8a5c37" stroke="#1a1a1a" stroke-width="4"/>
+    <rect x="170" y="488" width="14" height="70" fill="#5a3d24"/>
+    <rect x="616" y="488" width="14" height="70" fill="#5a3d24"/>
+    ${person({cx:230,cy:365,shirt:"#e07a5f",skin:"#e0ac69",pose:"sit"})}
+    ${person({cx:570,cy:365,shirt:"#3d5a80",skin:"#8d5524",pose:"sit",mirror:true,hair:"#1a1a1a"})}
+  `},
+  { id:"wachtkamer", title:"In de wachtkamer", bg:()=>`
+    <rect width="800" height="600" fill="#f2ede1"/>
+    <rect y="500" width="800" height="100" fill="#d9d0bd"/>
+    <circle cx="400" cy="90" r="34" fill="none" stroke="#1a1a1a" stroke-width="4"/>
+    <path d="M400,90 L400,70 M400,90 L415,98" stroke="#1a1a1a" stroke-width="3"/>
+    <rect x="620" y="60" width="120" height="90" rx="4" fill="#cfe0d8" stroke="#1a1a1a" stroke-width="3"/>
+    <rect x="60" y="470" width="46" height="60" rx="6" fill="#6b8f5a" stroke="#1a1a1a" stroke-width="3"/>
+    <path d="M83,470 Q60,440 83,420 Q106,440 83,470Z" fill="#7fae72" stroke="#1a1a1a" stroke-width="3"/>
+    <rect x="170" y="420" width="100" height="16" rx="6" fill="#c46b5a" stroke="#1a1a1a" stroke-width="3"/>
+    <rect x="180" y="436" width="14" height="60" fill="#7a5334"/>
+    <rect x="246" y="436" width="14" height="60" fill="#7a5334"/>
+    <rect x="530" y="420" width="100" height="16" rx="6" fill="#5a7dc4" stroke="#1a1a1a" stroke-width="3"/>
+    <rect x="540" y="436" width="14" height="60" fill="#7a5334"/>
+    <rect x="606" y="436" width="14" height="60" fill="#7a5334"/>
+    ${person({cx:230,cy:365,shirt:"#81b29a",skin:"#f2c9a0",pose:"sit"})}
+    ${person({cx:570,cy:365,shirt:"#f2cc8f",skin:"#c68642",pose:"sit",mirror:true,hair:"#1a1a1a"})}
+  `},
+  { id:"vergadertafel", title:"Aan de vergadertafel", bg:()=>`
+    <rect width="800" height="600" fill="#eef0f5"/>
+    <rect x="60" y="40" width="200" height="120" fill="#dce8f0" stroke="#1a1a1a" stroke-width="4"/>
+    <path d="M60,70 H260 M60,100 H260 M60,130 H260" stroke="#1a1a1a" stroke-width="2"/>
+    <rect x="540" y="40" width="180" height="110" rx="4" fill="#ffffff" stroke="#1a1a1a" stroke-width="4"/>
+    <path d="M560,100 Q600,70 640,95 Q670,60 700,90" stroke="#e63946" stroke-width="3" fill="none"/>
+    <ellipse cx="400" cy="470" rx="290" ry="55" fill="#a9744f" stroke="#1a1a1a" stroke-width="5"/>
+    <rect x="180" y="415" width="70" height="44" rx="4" fill="#37474f" stroke="#1a1a1a" stroke-width="3"/>
+    <rect x="550" y="415" width="70" height="44" rx="4" fill="#37474f" stroke="#1a1a1a" stroke-width="3"/>
+    ${person({cx:230,cy:365,shirt:"#6d597a",skin:"#8d5524",pose:"sit"})}
+    ${person({cx:570,cy:365,shirt:"#588157",skin:"#ffdbac",pose:"sit",mirror:true,hair:"#c99a4a"})}
+  `},
+  { id:"ouderkind", title:"Ouder en kind", bg:()=>`
+    <rect width="800" height="600" fill="#cdeeff"/>
+    <circle cx="130" cy="90" r="42" fill="#ffe17a"/>
+    <rect y="470" width="800" height="130" fill="#8fce8f"/>
+    <path d="M0,480 Q400,450 800,480" stroke="#c7b28a" stroke-width="14" fill="none"/>
+    <ellipse cx="700" cy="410" rx="60" ry="110" fill="#5c9c5c"/>
+    <path d="M255,340 Q300,410 500,395" stroke="#1a1a1a" stroke-width="4" fill="none" stroke-linecap="round"/>
+    ${person({cx:230,cy:325,shirt:"#6d597a",skin:"#c68642",pose:"stand",scale:1.05})}
+    ${person({cx:560,cy:375,shirt:"#f4a261",skin:"#f2c9a0",pose:"stand",scale:0.66,hair:"#c99a4a"})}
+  `},
+  { id:"sterren", title:"Onder de sterrenhemel", bg:()=>{
+      let stars="";
+      const pts=[[60,40],[140,80],[210,30],[300,60],[380,25],[470,70],[540,35],[620,90],[700,45],[760,75],
+                 [100,140],[250,120],[420,150],[600,140],[730,150],[180,200],[350,190],[520,210],[680,200],[90,240]];
+      pts.forEach(p=>{stars+=`<circle cx="${p[0]}" cy="${p[1]}" r="2.4" fill="#fff"/>`;});
+      return `
+      <rect width="800" height="600" fill="#0b132b"/>
+      <path d="M660,60 A40,40 0 1 0 700,100 A30,30 0 1 1 660,60Z" fill="#f2f0e6"/>
+      ${stars}
+      <path d="M0,300 L60,220 L120,300Z" fill="#2b2b2b" stroke="#1a1a1a" stroke-width="3"/>
+      <circle cx="130" cy="300" r="18" fill="#ffb347"/>
+      <circle cx="130" cy="300" r="9" fill="#ffe17a"/>
+      <rect y="330" width="800" height="270" fill="#1c3b2e"/>
+      ${person({cx:290,cy:390,shirt:"#8badc9",skin:"#e0ac69",pose:"lie",hair:"#1a1a1a"})}
+      ${person({cx:290,cy:450,shirt:"#c98a8a",skin:"#f2c9a0",pose:"lie",hair:"#5a3d24"})}
+      `;
+  }}
+];
+
+/* ---------------------------------------------------------
+   SPEECH BUBBLE PATH (rounded rect + staart)
+--------------------------------------------------------- */
+function bubblePath(b){
+  const {x,y,w,h,tailFrac,tail} = b, r=20, half=16;
+  const tailBaseX = x + w*tailFrac;
+  const b1 = Math.max(x+r, tailBaseX-half);
+  const b2 = Math.min(x+w-r, tailBaseX+half);
+  return `M${x+r},${y} L${x+w-r},${y} A${r},${r} 0 0 1 ${x+w},${y+r} L${x+w},${y+h-r} A${r},${r} 0 0 1 ${x+w-r},${y+h}
+    L${b2},${y+h} L${tail.x},${tail.y} L${b1},${y+h} L${x+r},${y+h} A${r},${r} 0 0 1 ${x},${y+h-r} L${x},${y+r} A${r},${r} 0 0 1 ${x+r},${y} Z`;
+}
+function bubbleGroup(b, idx){
+  const pad=16, cx=b.x+b.w/2;
+  return `<g>
+    <path d="${bubblePath(b)}" fill="#ffffff" stroke="#1a1a1a" stroke-width="5"/>
+    <text class="bubble-text" data-i="${idx}" data-x="${b.x+pad}" data-y="${b.y+pad}" data-w="${b.w-pad*2}" data-h="${b.h-pad*2}" data-cx="${cx}"
+      font-family='${BUBBLE_FONT}' font-weight="bold" fill="#1a1a1a" text-anchor="middle"></text>
+  </g>`;
+}
+
+/* ---------------------------------------------------------
+   TEKST PASSEND MAKEN (wrap + auto-verkleinen)
+--------------------------------------------------------- */
+const measureCanvas = document.createElement("canvas");
+const mctx = measureCanvas.getContext("2d");
+
+function wrapText(text, maxWidth){
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines=[]; let line="";
+  for(const word of words){
+    const test = line ? line+" "+word : word;
+    if(mctx.measureText(test).width<=maxWidth){ line=test; continue; }
+    if(line) lines.push(line);
+    if(mctx.measureText(word).width>maxWidth){
+      let chunk="";
+      for(const ch of word){
+        const t2=chunk+ch;
+        if(mctx.measureText(t2).width>maxWidth && chunk){ lines.push(chunk); chunk=ch; } else chunk=t2;
+      }
+      line=chunk;
+    } else {
+      line=word;
+    }
+  }
+  if(line) lines.push(line);
+  return lines.length?lines:[""];
+}
+
+function fitText(text, maxW, maxH, maxFont, minFont){
+  for(let fs=maxFont; fs>=minFont; fs--){
+    mctx.font = `bold ${fs}px ${BUBBLE_FONT}`;
+    const lines = wrapText(text, maxW);
+    const lineHeight = fs*1.22;
+    if(lines.length*lineHeight<=maxH) return {lines, fontSize:fs, lineHeight};
+  }
+  mctx.font = `bold ${minFont}px ${BUBBLE_FONT}`;
+  let lines = wrapText(text, maxW);
+  const lineHeight = minFont*1.22;
+  const maxLines = Math.max(1, Math.floor(maxH/lineHeight));
+  if(lines.length>maxLines){
+    lines = lines.slice(0,maxLines);
+    let last = lines[maxLines-1];
+    while(mctx.measureText(last+"…").width>maxW && last.length>1){ last=last.slice(0,-1); }
+    lines[maxLines-1]=last+"…";
+  }
+  return {lines, fontSize:minFont, lineHeight};
+}
+
+function renderBubbleText(textEl, text){
+  while(textEl.firstChild) textEl.removeChild(textEl.firstChild);
+  const x=+textEl.dataset.x, y=+textEl.dataset.y, w=+textEl.dataset.w, h=+textEl.dataset.h, cx=+textEl.dataset.cx;
+  const {lines, fontSize, lineHeight} = fitText(text||"", w, h, 42, 16);
+  textEl.setAttribute("font-size", fontSize);
+  const totalH = lines.length*lineHeight;
+  const startY = y + Math.max(0,(h-totalH)/2) + fontSize*0.85;
+  lines.forEach((line,i)=>{
+    const tspan = document.createElementNS(SVGNS,"tspan");
+    tspan.setAttribute("x", cx);
+    tspan.setAttribute("y", startY + i*lineHeight);
+    tspan.textContent = line;
+    textEl.appendChild(tspan);
+  });
+}
+
+/* ---------------------------------------------------------
+   APP-STATE
+--------------------------------------------------------- */
+const state = { sceneIndex:0, theme:"mix", texts:["",""] };
+
+function randomFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function randomStatement(theme){
+  if(theme==="mix"){
+    const all = Object.values(CATEGORY_TEXTS).flat();
+    return randomFrom(all);
+  }
+  return randomFrom(CATEGORY_TEXTS[theme]);
+}
+function randomReaction(){ return randomFrom(REACTIONS); }
+
+function pickRandomSceneIndex(excludeCurrent){
+  if(SCENES.length===1) return 0;
+  let idx;
+  do{ idx=Math.floor(Math.random()*SCENES.length); } while(excludeCurrent && idx===state.sceneIndex);
+  return idx;
+}
+
+function fillRandomTexts(){
+  // De reactie in de tweede wolk is altijd willekeurig, los van categorie en uitspraak.
+  state.texts=[randomStatement(state.theme), randomReaction()];
+}
+
+function renderScene(){
+  const scene = SCENES[state.sceneIndex];
+  const bubbleDefs = [DUO_BUBBLE_A, DUO_BUBBLE_B];
+  const bubblesMarkup = bubbleDefs.map((b,i)=>bubbleGroup(b,i)).join("");
+  const svg = `<svg id="scene-svg" xmlns="${SVGNS}" viewBox="0 0 800 600" width="800" height="600">
+      ${scene.bg()}
+      ${bubblesMarkup}
+    </svg>`;
+  document.getElementById("scene-frame").innerHTML = svg;
+  document.getElementById("scene-title").textContent = scene.title;
+
+  document.querySelectorAll(".bubble-text").forEach(el=>{
+    const i = +el.dataset.i;
+    renderBubbleText(el, state.texts[i]||"");
+  });
+
+  renderBubbleFields();
+}
+
+function renderBubbleFields(){
+  const wrap = document.getElementById("bubble-fields");
+  wrap.innerHTML="";
+  const labels = ["Uitspraak in de linker wolk","Reactie in de rechter wolk"];
+  for(let i=0;i<2;i++){
+    const label=document.createElement("label");
+    label.className="field-label";
+    label.setAttribute("for","text-input-"+i);
+    label.textContent=labels[i];
+    const ta=document.createElement("textarea");
+    ta.id="text-input-"+i;
+    ta.maxLength=140;
+    ta.value=state.texts[i]||"";
+    ta.addEventListener("input",()=>{
+      state.texts[i]=ta.value;
+      const el=document.querySelector(`.bubble-text[data-i="${i}"]`);
+      if(el) renderBubbleText(el, ta.value);
+    });
+    wrap.appendChild(label);
+    wrap.appendChild(ta);
+  }
+}
+
+function renderThemeChips(){
+  const wrap = document.getElementById("theme-chips");
+  wrap.innerHTML="";
+  THEMES.forEach(t=>{
+    const btn=document.createElement("button");
+    btn.type="button";
+    btn.className="chip"+(t.id===state.theme?" active":"");
+    btn.textContent=t.label;
+    btn.addEventListener("click",()=>{
+      state.theme=t.id;
+      document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+      btn.classList.add("active");
+    });
+    wrap.appendChild(btn);
+  });
+}
+
+/* ---------------------------------------------------------
+   EXPORTEREN
+--------------------------------------------------------- */
+function getPngBlob(cb){
+  const svgEl = document.getElementById("scene-svg");
+  const data = new XMLSerializer().serializeToString(svgEl);
+  const blob = new Blob([data], {type:"image/svg+xml;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  img.onload = function(){
+    const scaleFactor=2;
+    const canvas=document.createElement("canvas");
+    canvas.width=800*scaleFactor; canvas.height=600*scaleFactor;
+    const ctx=canvas.getContext("2d");
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.scale(scaleFactor,scaleFactor);
+    ctx.drawImage(img,0,0,800,600);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(cb, "image/png");
+  };
+  img.onerror = function(){ URL.revokeObjectURL(url); cb(null); };
+  img.src = url;
+}
+
+function downloadImage(){
+  getPngBlob(blob=>{
+    if(!blob){ alert("Downloaden is niet gelukt. Probeer het nog eens."); return; }
+    const scene = SCENES[state.sceneIndex];
+    const a=document.createElement("a");
+    a.download = `tekstwolk-${scene.id}.png`;
+    a.href = URL.createObjectURL(blob);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+}
+
+function shareImage(){
+  getPngBlob(async blob=>{
+    if(!blob){ alert("Delen is niet gelukt. Probeer het nog eens."); return; }
+    const scene = SCENES[state.sceneIndex];
+    const file = new File([blob], `tekstwolk-${scene.id}.png`, {type:"image/png"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({files:[file], title:"Tekstwolk", text:"Kijk wat ik heb gemaakt!"});
+        return;
+      }catch(e){ /* geannuleerd of mislukt: val terug op download */ }
+    }
+    const a=document.createElement("a");
+    a.download = file.name;
+    a.href = URL.createObjectURL(blob);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    alert("Delen wordt niet ondersteund op dit apparaat. De afbeelding is gedownload — je kunt 'm nu zelf versturen.");
+  });
+}
+
+/* ---------------------------------------------------------
+   INIT
+--------------------------------------------------------- */
+document.getElementById("btn-new-scene").addEventListener("click",()=>{
+  state.sceneIndex = pickRandomSceneIndex(true);
+  renderScene();
+});
+document.getElementById("btn-random-text").addEventListener("click",()=>{
+  fillRandomTexts();
+  renderScene();
+});
+document.getElementById("btn-download").addEventListener("click", downloadImage);
+document.getElementById("btn-share").addEventListener("click", shareImage);
+
+renderThemeChips();
+state.sceneIndex = pickRandomSceneIndex(false);
+fillRandomTexts();
+renderScene();
+
+})();
+</script>
+</body>
+</html>
